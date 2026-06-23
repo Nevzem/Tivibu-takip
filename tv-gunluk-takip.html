@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>TV Günlük Takip</title>
+<style>
+  :root{
+    --tt-purple:#2f8fd6;
+    --tt-blue:#00a9e0;
+    --bg:#f5f6f8;
+    --card:#ffffff;
+    --card-2:#f0f1f4;
+    --border:#e3e5ea;
+    --text:#1c1e24;
+    --text-dim:#7a7e89;
+    --gold:#d4af37;
+    --silver:#b9bcc4;
+    --bronze:#b5713c;
+    --green:#16c98d;
+    --red:#ef4458;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    min-height:100vh;
+    padding-bottom:36px;
+  }
+  .wrap{max-width:460px;margin:0 auto;padding:16px 12px 0;}
+
+  .header{
+    background:linear-gradient(135deg,#3aa3e8,#1f76b8);
+    border-radius:16px;
+    padding:16px 16px 15px;
+  }
+  .brand-row{display:flex;align-items:center;justify-content:space-between;}
+  .title{font-size:18px;font-weight:800;letter-spacing:-0.2px;margin:0;}
+  .subtitle{font-size:11.5px;color:rgba(255,255,255,0.7);margin:2px 0 0;font-weight:600;}
+  .day-pill{
+    background:rgba(255,255,255,0.12);
+    border-radius:8px;
+    padding:5px 10px;
+    font-size:11px;
+    font-weight:700;
+    white-space:nowrap;
+  }
+  .day-pill span{color:#fff;font-weight:800;}
+
+  .stat-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:6px;
+    margin-top:13px;
+  }
+  .stat-box{
+    background:rgba(255,255,255,0.07);
+    border-radius:10px;
+    padding:8px 4px;
+    text-align:center;
+  }
+  .stat-box .num{font-size:16px;font-weight:800;line-height:1.1;}
+  .stat-box .lbl{font-size:9px;color:rgba(255,255,255,0.65);margin-top:2px;font-weight:600;letter-spacing:.2px;}
+
+  .progress-wrap{margin-top:12px;}
+  .progress-top{display:flex;justify-content:space-between;font-size:10.5px;font-weight:600;color:rgba(255,255,255,0.8);margin-bottom:5px;}
+  .progress-track{
+    background:rgba(0,0,0,0.28);
+    border-radius:999px;
+    height:8px;
+    overflow:hidden;
+  }
+  .progress-fill{
+    height:100%;
+    border-radius:999px;
+    background:var(--tt-blue);
+    transition:width .4s ease;
+    width:0%;
+  }
+
+  .success-banner{
+    margin-top:12px;
+    background:#0e9e6b;
+    border-radius:12px;
+    padding:11px 14px;
+    text-align:center;
+    font-weight:700;
+    font-size:13px;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+  }
+  .success-banner.show{display:flex;}
+
+  .section-label{
+    font-size:10.5px;
+    font-weight:700;
+    color:var(--text-dim);
+    letter-spacing:.4px;
+    text-transform:uppercase;
+    margin:16px 2px 8px;
+  }
+
+  .list{display:flex;flex-direction:column;gap:6px;}
+  .row-card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:7px 9px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    border-left:3px solid var(--border);
+  }
+  .row-card.gold{border-left-color:var(--gold);}
+  .row-card.silver{border-left-color:var(--silver);}
+  .row-card.bronze{border-left-color:var(--bronze);}
+
+  .rank-badge{
+    width:22px;height:22px;
+    border-radius:7px;
+    background:var(--card-2);
+    display:flex;align-items:center;justify-content:center;
+    font-size:11px;font-weight:700;
+    color:var(--text-dim);
+    flex-shrink:0;
+  }
+  .row-card.gold .rank-badge{background:rgba(212,175,55,0.15);font-size:13px;}
+  .row-card.silver .rank-badge{background:rgba(185,188,196,0.2);font-size:13px;}
+  .row-card.bronze .rank-badge{background:rgba(181,113,60,0.15);font-size:13px;}
+
+  .row-info{flex:1;min-width:0;}
+  .row-name{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .row-meta{font-size:9.5px;color:var(--text-dim);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .row-count{font-size:14px;font-weight:700;min-width:20px;text-align:right;flex-shrink:0;}
+  .row-card.gold .row-count{color:var(--gold);}
+  .row-card.silver .row-count{color:var(--silver);}
+  .row-card.bronze .row-count{color:var(--bronze);}
+
+  .ctrl-line{
+
+    margin-top:7px;
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .btn-circle{
+    width:28px;height:28px;
+    border-radius:8px;
+    border:none;
+    font-size:15px;
+    font-weight:800;
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;
+    user-select:none;
+    flex-shrink:0;
+  }
+  .btn-circle:active{transform:scale(0.9);}
+  .btn-plus{background:rgba(22,201,141,0.13);color:var(--green);}
+  .btn-minus{background:rgba(239,68,88,0.12);color:var(--red);}
+
+  .manual-input{
+    width:42px;
+    background:var(--card-2);
+    border:1px solid var(--border);
+    border-radius:8px;
+    color:var(--text);
+    font-size:12px;
+    font-weight:700;
+    text-align:center;
+    padding:5px 2px;
+    flex-shrink:0;
+    margin-left:auto;
+  }
+  .manual-input:focus{outline:none;border-color:var(--tt-blue);}
+
+  .actions{margin-top:20px;display:flex;flex-direction:column;gap:8px;}
+  .action-btn{
+    border:none;
+    border-radius:12px;
+    padding:13px;
+    font-size:13.5px;
+    font-weight:700;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:7px;
+  }
+  .action-btn.whatsapp{background:#25d366;color:#06310f;}
+  .action-btn.image{background:var(--tt-blue);color:#fff;}
+  .action-btn.reset{background:var(--card);border:1px solid var(--border);color:var(--text-dim);}
+  .action-btn:active{opacity:0.85;}
+
+  .wa-box{
+    margin-top:9px;
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:10px;
+    display:none;
+  }
+  .wa-box.show{display:block;}
+  .wa-box textarea{
+    width:100%;
+    min-height:150px;
+    background:var(--card-2);
+    border:1px solid var(--border);
+    border-radius:9px;
+    color:var(--text);
+    font-size:12px;
+    padding:9px;
+    font-family:inherit;
+    resize:vertical;
+    line-height:1.5;
+  }
+  .wa-box .copy-btn{
+    margin-top:7px;
+    width:100%;
+    background:var(--tt-blue);
+    color:#fff;
+    border:none;
+    border-radius:9px;
+    padding:10px;
+    font-weight:700;
+    font-size:12.5px;
+    cursor:pointer;
+  }
+  .copied-msg{
+    text-align:center;
+    font-size:11px;
+    color:var(--green);
+    font-weight:700;
+    margin-top:5px;
+    display:none;
+  }
+  .copied-msg.show{display:block;}
+
+  footer{
+    text-align:center;
+    color:var(--text-dim);
+    font-size:10px;
+    margin-top:24px;
+    padding-bottom:6px;
+  }
+
+  .modal-overlay{
+    position:fixed;inset:0;
+    background:rgba(0,0,0,0.55);
+    display:none;
+    align-items:center;justify-content:center;
+    z-index:100;
+    padding:20px;
+  }
+  .modal-overlay.show{display:flex;}
+  .modal-box{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:18px;
+    max-width:320px;
+    width:100%;
+    text-align:center;
+  }
+  .modal-box p{font-size:13.5px;font-weight:600;margin:0 0 14px;}
+  .modal-actions{display:flex;gap:8px;}
+  .modal-actions button{
+    flex:1;
+    padding:10px;
+    border-radius:9px;
+    border:none;
+    font-weight:700;
+    font-size:12.5px;
+    cursor:pointer;
+  }
+  .modal-cancel{background:var(--card-2);color:var(--text);}
+  .modal-confirm{background:var(--red);color:#fff;}
+
+  .img-modal-box{max-width:360px;background:var(--card);}
+  .img-preview{width:100%;border-radius:10px;margin-bottom:12px;border:1px solid var(--border);}
+  .img-actions{display:flex;gap:8px;}
+  .img-actions button{
+    flex:1;
+    padding:11px;
+    border-radius:9px;
+    border:none;
+    font-weight:700;
+    font-size:12.5px;
+    cursor:pointer;
+  }
+  .img-share{background:var(--tt-blue);color:#fff;}
+  .img-close{background:var(--card-2);color:var(--text);}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <div class="header">
+    <div class="brand-row">
+      <div>
+        <p class="title">TV Günlük Takip</p>
+        <p class="subtitle">IPTV + Uydu TV</p>
+      </div>
+      <div class="day-pill">Kalan gün <span id="dayLeft">8</span></div>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-box">
+        <div class="num" id="statTotal">0</div>
+        <div class="lbl">GERÇEKLEŞEN</div>
+      </div>
+      <div class="stat-box">
+        <div class="num" id="statRemaining">129</div>
+        <div class="lbl">KALAN ADET</div>
+      </div>
+      <div class="stat-box">
+        <div class="num" id="statPercent">%0</div>
+        <div class="lbl">TAMAMLAMA</div>
+      </div>
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress-top">
+        <span>Hedef: <b id="statGoal">129</b> · Günlük: <b>17</b></span>
+        <span id="progressPercentTop">%0</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="success-banner" id="successBanner">🎉 TV hedef açığı kapandı.</div>
+
+  <p class="section-label">🏆 Bayi Sıralaması</p>
+  <div class="list" id="dealerList"></div>
+
+
+  <div class="actions">
+    <button class="action-btn whatsapp" id="waBtn">📲 WhatsApp Mesajı Oluştur</button>
+    <button class="action-btn image" id="imgBtn">🖼️ Görüntü Paylaş</button>
+    <button class="action-btn reset" id="resetBtn">↺ Verileri Sıfırla</button>
+  </div>
+
+  <div class="wa-box" id="waBox">
+    <textarea id="waText" readonly></textarea>
+    <button class="copy-btn" id="copyBtn">Metni Kopyala</button>
+    <div class="copied-msg" id="copiedMsg">✓ Kopyalandı</div>
+  </div>
+
+  <footer>TT Kuzey Anadolu · TV Satış Takip Paneli</footer>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box">
+    <p>Tüm bayi adetleri sıfırlanacak. Onaylıyor musunuz?</p>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="modalCancel">Vazgeç</button>
+      <button class="modal-confirm" id="modalConfirm">Sıfırla</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="imgModalOverlay">
+  <div class="modal-box img-modal-box">
+    <img class="img-preview" id="imgPreview" alt="Sıralama görüntüsü">
+    <div class="img-actions">
+      <button class="img-close" id="imgCloseBtn">Kapat</button>
+      <button class="img-share" id="imgShareBtn">Paylaş / Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = "tv_gunluk_takip_v1";
+const HEDEF_TOPLAM = 129;
+const GUNLUK_HEDEF = 17;
+const KALAN_GUN = 8;
+
+const defaultDealers = [
+  { id: 1, ad: "KILAVUZLAR İLT.",          kod: "4100089", il: "KIRIKKALE", adet: 0 },
+  { id: 2, ad: "ÖZTÜRK GIDA",               kod: "4057503", il: "KIRŞEHİR",  adet: 0 },
+  { id: 3, ad: "KILAVUZLAR İLT.",          kod: "4100087", il: "KIRIKKALE", adet: 0 },
+  { id: 4, ad: "ASİS TELEKOMÜNİKASYON",    kod: "4052718", il: "SAMSUN",    adet: 0 },
+  { id: 5, ad: "İBRAHİM BIYIK",             kod: "500733",  il: "SAMSUN",    adet: 0 },
+  { id: 6, ad: "İLK İLETİŞİM",              kod: "502046",  il: "SAMSUN",    adet: 0 },
+  { id: 7, ad: "ÖZTÜRK GIDA",               kod: "4100760", il: "KIRŞEHİR",  adet: 0 },
+  { id: 8, ad: "ASİS TELEKOMÜNİKASYON",    kod: "4100641", il: "SİNOP",     adet: 0 },
+  { id: 9, ad: "TAŞ-KA İLT.",              kod: "501699",  il: "YOZGAT",    adet: 0 },
+];
+
+let dealers = loadData();
+
+function loadData(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return JSON.parse(JSON.stringify(defaultDealers));
+    const parsed = JSON.parse(raw);
+    if(!Array.isArray(parsed) || parsed.length === 0) return JSON.parse(JSON.stringify(defaultDealers));
+    return parsed;
+  }catch(e){
+    return JSON.parse(JSON.stringify(defaultDealers));
+  }
+}
+
+function saveData(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(dealers));
+}
+
+function getSortedDealers(){
+  return [...dealers].sort((a,b)=>{
+    if(b.adet !== a.adet) return b.adet - a.adet;
+    return a.id - b.id;
+  });
+}
+
+function render(){
+  const sorted = getSortedDealers();
+
+  const medalIcons = ["🥇","🥈","🥉"];
+  const medalClass = ["gold","silver","bronze"];
+  const listContainer = document.getElementById("dealerList");
+  listContainer.innerHTML = "";
+
+  sorted.forEach((dealer, idx) => {
+    const isTop3 = idx < 3;
+    const row = document.createElement("div");
+    row.className = "row-card" + (isTop3 ? " " + medalClass[idx] : "");
+    const badgeContent = isTop3 ? medalIcons[idx] : (idx + 1);
+    row.innerHTML = `
+      <div class="rank-badge">${badgeContent}</div>
+      <div class="row-info">
+        <div class="row-name">${dealer.ad}</div>
+        <div class="row-meta">${dealer.kod} · ${dealer.il}</div>
+      </div>
+      <div class="row-count">${dealer.adet}</div>
+      <button class="btn-circle btn-minus" data-id="${dealer.id}">–</button>
+      <button class="btn-circle btn-plus" data-id="${dealer.id}">+</button>
+      <input type="number" min="0" class="manual-input" data-id="${dealer.id}" value="${dealer.adet}">
+    `;
+    listContainer.appendChild(row);
+  });
+
+  const toplam = dealers.reduce((sum, d) => sum + d.adet, 0);
+  const kalan = Math.max(HEDEF_TOPLAM - toplam, 0);
+  const yuzde = Math.min(Math.round((toplam / HEDEF_TOPLAM) * 100), 100);
+
+  document.getElementById("statTotal").textContent = toplam;
+  document.getElementById("statRemaining").textContent = kalan;
+  document.getElementById("statPercent").textContent = "%" + yuzde;
+  document.getElementById("statGoal").textContent = HEDEF_TOPLAM;
+  document.getElementById("progressPercentTop").textContent = "%" + yuzde;
+  document.getElementById("progressFill").style.width = yuzde + "%";
+  document.getElementById("dayLeft").textContent = KALAN_GUN;
+
+  const banner = document.getElementById("successBanner");
+  if(toplam >= HEDEF_TOPLAM){
+    banner.classList.add("show");
+  } else {
+    banner.classList.remove("show");
+  }
+
+  attachRowEvents();
+}
+
+function attachRowEvents(){
+  document.querySelectorAll(".btn-plus").forEach(btn => {
+    btn.onclick = () => changeAdet(parseInt(btn.dataset.id), 1);
+  });
+  document.querySelectorAll(".btn-minus").forEach(btn => {
+    btn.onclick = () => changeAdet(parseInt(btn.dataset.id), -1);
+  });
+  document.querySelectorAll(".manual-input").forEach(input => {
+    input.onchange = () => {
+      let val = parseInt(input.value);
+      if(isNaN(val) || val < 0) val = 0;
+      setAdet(parseInt(input.dataset.id), val);
+    };
+  });
+}
+
+function changeAdet(id, delta){
+  const dealer = dealers.find(d => d.id === id);
+  if(!dealer) return;
+  dealer.adet = Math.max(dealer.adet + delta, 0);
+  saveData();
+  render();
+}
+
+function setAdet(id, value){
+  const dealer = dealers.find(d => d.id === id);
+  if(!dealer) return;
+  dealer.adet = Math.max(value, 0);
+  saveData();
+  render();
+}
+
+document.getElementById("waBtn").onclick = () => {
+  const sorted = getSortedDealers();
+  const toplam = dealers.reduce((sum, d) => sum + d.adet, 0);
+  const kalan = Math.max(HEDEF_TOPLAM - toplam, 0);
+  const yuzde = Math.min(Math.round((toplam / HEDEF_TOPLAM) * 100), 100);
+  const medals = ["🥇","🥈","🥉"];
+
+  let msg = `📺 TV Günlük Takip\n`;
+  msg += `Toplam: ${toplam} / ${HEDEF_TOPLAM}\n`;
+  msg += `Kalan: ${kalan}\n`;
+  msg += `Tamamlama: %${yuzde}\n\n`;
+  msg += `İlk 3 Bayi:\n`;
+  sorted.slice(0,3).forEach((d, i) => {
+    msg += `${medals[i]} ${d.ad} - ${d.adet} adet\n`;
+  });
+
+  const waBox = document.getElementById("waBox");
+  document.getElementById("waText").value = msg;
+  waBox.classList.add("show");
+  document.getElementById("copiedMsg").classList.remove("show");
+  waBox.scrollIntoView({behavior:"smooth", block:"nearest"});
+};
+
+document.getElementById("copyBtn").onclick = () => {
+  const textarea = document.getElementById("waText");
+  textarea.select();
+  textarea.setSelectionRange(0, 99999);
+  try{
+    navigator.clipboard.writeText(textarea.value).then(showCopied).catch(()=>{
+      document.execCommand("copy");
+      showCopied();
+    });
+  }catch(e){
+    document.execCommand("copy");
+    showCopied();
+  }
+};
+
+function showCopied(){
+  const msg = document.getElementById("copiedMsg");
+  msg.classList.add("show");
+  setTimeout(()=> msg.classList.remove("show"), 2000);
+}
+
+document.getElementById("resetBtn").onclick = () => {
+  document.getElementById("modalOverlay").classList.add("show");
+};
+document.getElementById("modalCancel").onclick = () => {
+  document.getElementById("modalOverlay").classList.remove("show");
+};
+document.getElementById("modalConfirm").onclick = () => {
+  dealers.forEach(d => d.adet = 0);
+  saveData();
+  render();
+  document.getElementById("modalOverlay").classList.remove("show");
+  document.getElementById("waBox").classList.remove("show");
+};
+
+let lastImageBlob = null;
+
+function buildShareImage(){
+  const sorted = getSortedDealers();
+  const toplam = dealers.reduce((sum, d) => sum + d.adet, 0);
+  const kalan = Math.max(HEDEF_TOPLAM - toplam, 0);
+  const yuzde = Math.min(Math.round((toplam / HEDEF_TOPLAM) * 100), 100);
+
+  const W = 720;
+  const rowH = 56;
+  const headerH = 190;
+  const footerH = 30;
+  const H = headerH + sorted.length * rowH + footerH + 20;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext("2d");
+
+  ctx.fillStyle = "#f5f6f8";
+  ctx.fillRect(0,0,W,H);
+
+  const headerGradient = ctx.createLinearGradient(0, 0, W, headerH);
+  headerGradient.addColorStop(0, "#3aa3e8");
+  headerGradient.addColorStop(1, "#1f76b8");
+  ctx.fillStyle = headerGradient;
+  ctx.fillRect(0,0,W,headerH);
+
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 30px -apple-system, Arial, sans-serif";
+  ctx.fillText("TV Günlük Takip", 28, 46);
+
+  ctx.font = "600 16px -apple-system, Arial, sans-serif";
+  ctx.fillStyle = "rgba(255,255,255,0.75)";
+  ctx.fillText("IPTV + Uydu TV", 28, 70);
+
+  ctx.font = "bold 20px -apple-system, Arial, sans-serif";
+  ctx.fillStyle = "#ffffff";
+  ctx.fillText(`Toplam: ${toplam} / ${HEDEF_TOPLAM}`, 28, 108);
+  ctx.fillText(`Kalan: ${kalan}`, 28, 134);
+  ctx.fillText(`Tamamlama: %${yuzde}`, 28, 160);
+
+  const barX = 320, barY = 148, barW = W - barX - 28, barH = 14;
+  ctx.fillStyle = "rgba(0,0,0,0.3)";
+  roundRect(ctx, barX, barY, barW, barH, 7);
+  ctx.fill();
+  ctx.fillStyle = "#00a9e0";
+  roundRect(ctx, barX, barY, barW * (yuzde/100), barH, 7);
+  ctx.fill();
+
+  const medalColors = ["#d4af37","#b9bcc4","#b5713c"];
+  const medalIcons = ["🥇","🥈","🥉"];
+
+  sorted.forEach((dealer, idx) => {
+    const y = headerH + idx * rowH;
+    const isTop3 = idx < 3;
+
+    ctx.fillStyle = idx % 2 === 0 ? "#ffffff" : "#f0f1f4";
+    ctx.fillRect(0, y, W, rowH);
+
+    if(isTop3){
+      ctx.fillStyle = medalColors[idx];
+      ctx.fillRect(0, y, 5, rowH);
+    }
+
+    ctx.font = "bold 22px -apple-system, Arial, sans-serif";
+    ctx.fillStyle = isTop3 ? medalColors[idx] : "#7a7e89";
+    const rankText = isTop3 ? medalIcons[idx] : String(idx+1);
+    ctx.fillText(rankText, 26, y + rowH/2 + 8);
+
+    ctx.font = "bold 19px -apple-system, Arial, sans-serif";
+    ctx.fillStyle = "#1c1e24";
+    ctx.fillText(truncateText(ctx, dealer.ad, 360), 75, y + rowH/2 + 2);
+
+    ctx.font = "14px -apple-system, Arial, sans-serif";
+    ctx.fillStyle = "#7a7e89";
+    ctx.fillText(`${dealer.kod} · ${dealer.il}`, 75, y + rowH/2 + 20);
+
+    ctx.font = "bold 26px -apple-system, Arial, sans-serif";
+    ctx.fillStyle = isTop3 ? medalColors[idx] : "#1c1e24";
+    const countText = String(dealer.adet);
+    const countWidth = ctx.measureText(countText).width;
+    ctx.fillText(countText, W - 40 - countWidth, y + rowH/2 + 8);
+  });
+
+  ctx.font = "12px -apple-system, Arial, sans-serif";
+  ctx.fillStyle = "#a0a4ad";
+  const footerText = "TT Kuzey Anadolu · TV Satış Takip Paneli";
+  const fw = ctx.measureText(footerText).width;
+  ctx.fillText(footerText, (W - fw)/2, H - 12);
+
+  return canvas;
+}
+
+function roundRect(ctx, x, y, w, h, r){
+  if(w < r*2) r = w/2;
+  if(h < r*2) r = h/2;
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.arcTo(x+w, y, x+w, y+h, r);
+  ctx.arcTo(x+w, y+h, x, y+h, r);
+  ctx.arcTo(x, y+h, x, y, r);
+  ctx.arcTo(x, y, x+w, y, r);
+  ctx.closePath();
+}
+
+function truncateText(ctx, text, maxWidth){
+  if(ctx.measureText(text).width <= maxWidth) return text;
+  let trimmed = text;
+  while(ctx.measureText(trimmed + "…").width > maxWidth && trimmed.length > 0){
+    trimmed = trimmed.slice(0, -1);
+  }
+  return trimmed + "…";
+}
+
+document.getElementById("imgBtn").onclick = () => {
+  const canvas = buildShareImage();
+  canvas.toBlob((blob) => {
+    lastImageBlob = blob;
+    const url = URL.createObjectURL(blob);
+    document.getElementById("imgPreview").src = url;
+    document.getElementById("imgModalOverlay").classList.add("show");
+  }, "image/png");
+};
+
+document.getElementById("imgCloseBtn").onclick = () => {
+  document.getElementById("imgModalOverlay").classList.remove("show");
+};
+
+document.getElementById("imgShareBtn").onclick = async () => {
+  if(!lastImageBlob) return;
+  const file = new File([lastImageBlob], "tv-gunluk-takip.png", { type: "image/png" });
+
+  if(navigator.canShare && navigator.canShare({ files: [file] })){
+    try{
+      await navigator.share({
+        files: [file],
+        title: "TV Günlük Takip",
+        text: "TV satış sıralaması"
+      });
+      return;
+    }catch(e){
+      // kullanıcı paylaşımı iptal etti veya hata oldu, indirme alternatifine düş
+    }
+  }
+
+  const url = URL.createObjectURL(lastImageBlob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "tv-gunluk-takip.png";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
+
+render();
+</script>
+
+</body>
+</html>
