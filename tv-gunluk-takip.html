@@ -48,6 +48,36 @@
     white-space:nowrap;
   }
   .day-pill span{color:#fff;font-weight:800;}
+  .pill-input{
+    width:32px;
+    background:transparent;
+    border:none;
+    border-bottom:1px dashed rgba(255,255,255,0.6);
+    color:#fff;
+    font-size:11px;
+    font-weight:800;
+    text-align:center;
+    padding:0 1px;
+    outline:none;
+    -moz-appearance:textfield;
+  }
+  .pill-input::-webkit-outer-spin-button,
+  .pill-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+  .bar-input{
+    width:36px;
+    background:transparent;
+    border:none;
+    border-bottom:1px dashed rgba(255,255,255,0.6);
+    color:#fff;
+    font-size:10.5px;
+    font-weight:700;
+    text-align:center;
+    padding:0 1px;
+    outline:none;
+    -moz-appearance:textfield;
+  }
+  .bar-input::-webkit-outer-spin-button,
+  .bar-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
 
   .stat-grid{
     display:grid;
@@ -305,7 +335,7 @@
         <p class="title">TV Günlük Takip</p>
         <p class="subtitle">IPTV + Uydu TV</p>
       </div>
-      <div class="day-pill">Kalan gün <span id="dayLeft">8</span></div>
+      <div class="day-pill">Kalan gün <input id="dayLeft" class="pill-input" type="number" min="0" value="8"></div>
     </div>
 
     <div class="stat-grid">
@@ -325,7 +355,7 @@
 
     <div class="progress-wrap">
       <div class="progress-top">
-        <span>Hedef: <b id="statGoal">129</b> · Günlük: <b>17</b></span>
+        <span>Hedef: <input id="statGoal" class="bar-input" type="number" min="0" value="129"> · Günlük: <input id="statGunluk" class="bar-input" type="number" min="0" value="17"></span>
         <span id="progressPercentTop">%0</span>
       </div>
       <div class="progress-track">
@@ -377,9 +407,21 @@
 
 <script>
 const STORAGE_KEY = "tv_gunluk_takip_v1";
-const HEDEF_TOPLAM = 129;
-const GUNLUK_HEDEF = 17;
-const KALAN_GUN = 8;
+const SETTINGS_KEY = "tv_settings_v1";
+
+function loadSettings(){
+  try{
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return { hedef: 129, gunluk: 17, kalanGun: 8 };
+}
+function saveSettings(s){ localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); }
+
+let settings = loadSettings();
+function HEDEF_TOPLAM(){ return settings.hedef; }
+function GUNLUK_HEDEF(){ return settings.gunluk; }
+function KALAN_GUN(){ return settings.kalanGun; }
 
 const defaultDealers = [
   { id: 1, ad: "KILAVUZLAR İLT.",          kod: "4100089", il: "KIRIKKALE", adet: 0 },
@@ -390,7 +432,9 @@ const defaultDealers = [
   { id: 6, ad: "İLK İLETİŞİM",              kod: "502046",  il: "SAMSUN",    adet: 0 },
   { id: 7, ad: "ÖZTÜRK GIDA",               kod: "4100760", il: "KIRŞEHİR",  adet: 0 },
   { id: 8, ad: "ASİS TELEKOMÜNİKASYON",    kod: "4100641", il: "SİNOP",     adet: 0 },
-  { id: 9, ad: "TAŞ-KA İLT.",              kod: "501699",  il: "YOZGAT",    adet: 0 },
+  { id: 9,  ad: "TAŞ-KA İLT.",              kod: "501699",  il: "YOZGAT",    adet: 0 },
+  { id: 10, ad: "ASİS TELEKOMÜNİKASYON",   kod: "4100170", il: "SAMSUN",    adet: 0 },
+  { id: 11, ad: "PRİMETECH BİLİŞİM",        kod: "4100990", il: "SAMSUN",    adet: 0 },
 ];
 
 let dealers = loadData();
@@ -446,19 +490,20 @@ function render(){
   });
 
   const toplam = dealers.reduce((sum, d) => sum + d.adet, 0);
-  const kalan = Math.max(HEDEF_TOPLAM - toplam, 0);
-  const yuzde = Math.min(Math.round((toplam / HEDEF_TOPLAM) * 100), 100);
+  const kalan = Math.max(HEDEF_TOPLAM() - toplam, 0);
+  const yuzde = Math.min(Math.round((toplam / HEDEF_TOPLAM()) * 100), 100);
 
   document.getElementById("statTotal").textContent = toplam;
   document.getElementById("statRemaining").textContent = kalan;
   document.getElementById("statPercent").textContent = "%" + yuzde;
-  document.getElementById("statGoal").textContent = HEDEF_TOPLAM;
+  document.getElementById("statGoal").value = HEDEF_TOPLAM();
+  document.getElementById("statGunluk").value = GUNLUK_HEDEF();
   document.getElementById("progressPercentTop").textContent = "%" + yuzde;
   document.getElementById("progressFill").style.width = yuzde + "%";
-  document.getElementById("dayLeft").textContent = KALAN_GUN;
+  document.getElementById("dayLeft").value = KALAN_GUN();
 
   const banner = document.getElementById("successBanner");
-  if(toplam >= HEDEF_TOPLAM){
+  if(toplam >= HEDEF_TOPLAM()){
     banner.classList.add("show");
   } else {
     banner.classList.remove("show");
@@ -502,12 +547,12 @@ function setAdet(id, value){
 document.getElementById("waBtn").onclick = () => {
   const sorted = getSortedDealers();
   const toplam = dealers.reduce((sum, d) => sum + d.adet, 0);
-  const kalan = Math.max(HEDEF_TOPLAM - toplam, 0);
-  const yuzde = Math.min(Math.round((toplam / HEDEF_TOPLAM) * 100), 100);
+  const kalan = Math.max(HEDEF_TOPLAM() - toplam, 0);
+  const yuzde = Math.min(Math.round((toplam / HEDEF_TOPLAM()) * 100), 100);
   const medals = ["🥇","🥈","🥉"];
 
   let msg = `📺 TV Günlük Takip\n`;
-  msg += `Toplam: ${toplam} / ${HEDEF_TOPLAM}\n`;
+  msg += `Toplam: ${toplam} / ${HEDEF_TOPLAM()}\n`;
   msg += `Kalan: ${kalan}\n`;
   msg += `Tamamlama: %${yuzde}\n\n`;
   msg += `İlk 3 Bayi:\n`;
@@ -562,8 +607,8 @@ let lastImageBlob = null;
 function buildShareImage(){
   const sorted = getSortedDealers();
   const toplam = dealers.reduce((sum, d) => sum + d.adet, 0);
-  const kalan = Math.max(HEDEF_TOPLAM - toplam, 0);
-  const yuzde = Math.min(Math.round((toplam / HEDEF_TOPLAM) * 100), 100);
+  const kalan = Math.max(HEDEF_TOPLAM() - toplam, 0);
+  const yuzde = Math.min(Math.round((toplam / HEDEF_TOPLAM()) * 100), 100);
 
   const W = 720;
   const rowH = 56;
@@ -595,7 +640,7 @@ function buildShareImage(){
 
   ctx.font = "bold 20px -apple-system, Arial, sans-serif";
   ctx.fillStyle = "#ffffff";
-  ctx.fillText(`Toplam: ${toplam} / ${HEDEF_TOPLAM}`, 28, 108);
+  ctx.fillText(`Toplam: ${toplam} / ${HEDEF_TOPLAM()}`, 28, 108);
   ctx.fillText(`Kalan: ${kalan}`, 28, 134);
   ctx.fillText(`Tamamlama: %${yuzde}`, 28, 160);
 
@@ -713,6 +758,21 @@ document.getElementById("imgShareBtn").onclick = async () => {
   URL.revokeObjectURL(url);
 };
 
+/* ===== AYAR INPUT LİSTENERLARI ===== */
+function bindSettingInput(id, field){
+  document.getElementById(id).addEventListener("change", function(){
+    let val = parseInt(this.value);
+    if(isNaN(val) || val < 0) val = 0;
+    settings[field] = val;
+    saveSettings(settings);
+    render();
+  });
+}
+bindSettingInput("statGoal",   "hedef");
+bindSettingInput("statGunluk", "gunluk");
+bindSettingInput("dayLeft",    "kalanGun");
+
+/* ===== İLK YÜKLEME ===== */
 render();
 </script>
 
