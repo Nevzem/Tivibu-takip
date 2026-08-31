@@ -335,7 +335,7 @@
         <p class="title">TV Günlük Takip</p>
         <p class="subtitle">IPTV + Uydu TV</p>
       </div>
-      <div class="day-pill">Kalan gün <input id="dayLeft" class="pill-input" type="number" min="0" value="8"></div>
+      <div class="day-pill">Kalan gün <input id="dayLeft" class="pill-input" type="number" min="0" value="1"></div>
     </div>
 
     <div class="stat-grid">
@@ -344,7 +344,7 @@
         <div class="lbl">GERÇEKLEŞEN</div>
       </div>
       <div class="stat-box">
-        <div class="num" id="statRemaining">129</div>
+        <div class="num" id="statRemaining">100</div>
         <div class="lbl">KALAN ADET</div>
       </div>
       <div class="stat-box">
@@ -355,7 +355,7 @@
 
     <div class="progress-wrap">
       <div class="progress-top">
-        <span>Hedef: <input id="statGoal" class="bar-input" type="number" min="0" value="129"> · Günlük: <input id="statGunluk" class="bar-input" type="number" min="0" value="17"></span>
+        <span>Hedef: <input id="statGoal" class="bar-input" type="number" min="0" value="100"> · Günlük: <input id="statGunluk" class="bar-input" type="number" min="0" value="100"></span>
         <span id="progressPercentTop">%0</span>
       </div>
       <div class="progress-track">
@@ -406,15 +406,15 @@
 </div>
 
 <script>
-const STORAGE_KEY = "tv_gunluk_takip_v1";
-const SETTINGS_KEY = "tv_settings_v1";
+const STORAGE_KEY = "tv_gunluk_takip_v2";
+const SETTINGS_KEY = "tv_settings_v2";
 
 function loadSettings(){
   try{
     const raw = localStorage.getItem(SETTINGS_KEY);
     if(raw) return JSON.parse(raw);
   }catch(e){}
-  return { hedef: 129, gunluk: 17, kalanGun: 8 };
+  return { hedef: 100, gunluk: 100, kalanGun: 1 };
 }
 function saveSettings(s){ localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); }
 
@@ -424,17 +424,29 @@ function GUNLUK_HEDEF(){ return settings.gunluk; }
 function KALAN_GUN(){ return settings.kalanGun; }
 
 const defaultDealers = [
-  { id: 1, ad: "KILAVUZLAR İLT.",          kod: "4100089", il: "KIRIKKALE", adet: 0 },
-  { id: 2, ad: "ÖZTÜRK GIDA",               kod: "4057503", il: "KIRŞEHİR",  adet: 0 },
-  { id: 3, ad: "KILAVUZLAR İLT.",          kod: "4100087", il: "KIRIKKALE", adet: 0 },
-  { id: 4, ad: "ASİS TELEKOMÜNİKASYON",    kod: "4052718", il: "SAMSUN",    adet: 0 },
-  { id: 5, ad: "İBRAHİM BIYIK",             kod: "500733",  il: "SAMSUN",    adet: 0 },
-  { id: 6, ad: "İLK İLETİŞİM",              kod: "502046",  il: "SAMSUN",    adet: 0 },
-  { id: 7, ad: "ÖZTÜRK GIDA",               kod: "4100760", il: "KIRŞEHİR",  adet: 0 },
-  { id: 8, ad: "ASİS TELEKOMÜNİKASYON",    kod: "4100641", il: "SİNOP",     adet: 0 },
-  { id: 9,  ad: "TAŞ-KA İLT.",              kod: "501699",  il: "YOZGAT",    adet: 0 },
-  { id: 10, ad: "ASİS TELEKOMÜNİKASYON",   kod: "4100170", il: "SAMSUN",    adet: 0 },
-  { id: 11, ad: "PRİMETECH BİLİŞİM",        kod: "4100990", il: "SAMSUN",    adet: 0 },
+  { id:  1, ad: "PRİMETECH BİLİŞİM",        kod: "4100676", il: "SAMSUN",    adet: 0 },
+  { id:  2, ad: "ÖZTÜRK GIDA",               kod: "4057503", il: "KIRŞEHİR",  adet: 0 },
+  { id:  3, ad: "YAĞMUROĞLU BİLİŞİM",        kod: "4100776", il: "TOKAT",     adet: 0 },
+  { id:  4, ad: "YAĞMUROĞLU BİLİŞİM",        kod: "4100343", il: "TOKAT",     adet: 0 },
+  { id:  5, ad: "PRİMETECH BİLİŞİM",         kod: "4100990", il: "SAMSUN",    adet: 0 },
+  { id:  6, ad: "ASİS TELEKOMÜNİKASYON",     kod: "4052718", il: "SAMSUN",    adet: 0 },
+  { id:  7, ad: "ÖZTÜRK GIDA",               kod: "4100760", il: "KIRŞEHİR",  adet: 0 },
+  { id:  8, ad: "İBRAHİM BAKAN-BAKAN",        kod: "4100784", il: "AMASYA",    adet: 0 },
+  { id:  9, ad: "TAŞ-KA İLT.",               kod: "501699",  il: "YOZGAT",    adet: 0 },
+  { id: 10, ad: "ASİS TELEKOMÜNİKASYON",     kod: "4100641", il: "SİNOP",     adet: 0 },
+  { id: 11, ad: "EYMEN İLETİŞİM",             kod: "4054927", il: "ÇANKIRI",   adet: 0 },
+  { id: 12, ad: "İBRAHİM BAKAN-BAKAN",        kod: "4100785", il: "AMASYA",    adet: 0 },
+  { id: 13, ad: "KILAVUZLAR İLT.",            kod: "4100089", il: "KIRIKKALE", adet: 0 },
+  { id: 14, ad: "PRİMETECH BİLİŞİM",         kod: "4100778", il: "TOKAT",     adet: 0 },
+  { id: 15, ad: "PRİMETECH BİLİŞİM",         kod: "4100729", il: "SAMSUN",    adet: 0 },
+  { id: 16, ad: "İBRAHİM BAKAN-BAKAN",        kod: "4036313", il: "TOKAT",     adet: 0 },
+  { id: 17, ad: "İSA CUMHUR",                 kod: "7000045", il: "ÇORUM",     adet: 0 },
+  { id: 18, ad: "ASİS TELEKOMÜNİKASYON",     kod: "4100781", il: "ÇORUM",     adet: 0 },
+  { id: 19, ad: "PRİMETECH BİLİŞİM",         kod: "7100063", il: "SAMSUN",    adet: 0 },
+  { id: 20, ad: "İLK İLETİŞİM",              kod: "502046",  il: "SAMSUN",    adet: 0 },
+  { id: 21, ad: "İBRAHİM BIYIK",              kod: "500733",  il: "SAMSUN",    adet: 0 },
+  { id: 22, ad: "KILAVUZLAR İLT.",            kod: "4100087", il: "KIRIKKALE", adet: 0 },
+  { id: 23, ad: "ASİS TELEKOMÜNİKASYON",     kod: "4100170", il: "SAMSUN",    adet: 0 },
 ];
 
 let dealers = loadData();
@@ -778,3 +790,4 @@ render();
 
 </body>
 </html>
+
