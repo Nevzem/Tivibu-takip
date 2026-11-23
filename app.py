@@ -7,15 +7,15 @@ app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 12000
 DB = os.environ.get("DB_PATH", "/opt/render/project/src/netflix_test_responses.sqlite3")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
-KEYS = ["B","C","C","B","C","B","C","C","B","B"]
+KEYS = ["C","A","B","B","C","B","A","C","B","B"]
 QUESTIONS = [
- ("Netflix Hediyeli İnternet + Tivibu Kampanyası hangi müşteri grubuna yöneliktir?", ["Tüm mevcut internet müşterilerine", "Yeni bireysel ev interneti müşterilerine", "Yalnızca kurumsal müşterilere", "Yalnızca Tivibu müşterilerine"]),
- ("Kampanyadan yararlanmak için kaç ay taahhüt verilmelidir?", ["12 ay", "24 ay", "18 ay", "Taahhüt gerekmiyor"]),
- ("Kampanyaya katılmak için minimum internet hızı kaç Mbps olmalıdır?", ["35 Mbps", "50 Mbps", "100 Mbps", "200 Mbps"]),
+ ("Netflix Hediyeli İnternet + Tivibu kampanyası aşağıdaki müşteri gruplarından hangisine yönelik değildir?", ["Yeni bireysel ev interneti aboneliği başlatan müşterilere", "İnternet ve Tivibu IPTV hizmetlerini birlikte alan yeni bireysel müşterilere", "Kurumsal internet aboneliği açtıran işletmelere", "18 ay taahhütle yeni bireysel ev interneti müşterisi olanlara"]),
+ ("Kampanyada internet ve Tivibu taahhüdü ile Netflix faydasının toplam süresi sırasıyla kaç aydır?", ["İnternet ve Tivibu 18 ay, Netflix 12 ay", "İnternet ve Tivibu 12 ay, Netflix 18 ay", "İnternet ve Tivibu 18 ay, Netflix 18 ay", "İnternet ve Tivibu 12 ay, Netflix 12 ay"]),
+ ("İnternet + Tivibu kampanyasından Netflix avantajıyla yararlanmak için hangi hizmet kombinasyonu gereklidir?", ["Yalnızca ev interneti", "Ev interneti ile Tivibu IPTV birlikte", "Yalnızca Tivibu Uydu TV", "Mobil hat ile ev telefonu"]),
  ("Kampanya kapsamında Netflix kaç ay ücretsiz sunulmaktadır?", ["3 ay", "6 ay", "12 ay", "18 ay"]),
  ("Netflix üyeliğinin 7–12. aylarındaki ücretlendirme nasıl yapılır?", ["Ücretsiz devam eder", "Her ay güncel fiyat uygulanır", "Kampanyaya katılım tarihindeki fiyatla sabit ücretlendirilir", "Netflix üyeliği iptal edilir"]),
  ("Netflix üyeliğinin 13. ayından itibaren hangi fiyat uygulanır?", ["İlk 6 ayın fiyatı", "O tarihteki güncel Netflix fiyatı", "%50 indirimli fiyat", "Ücret alınmaz"]),
- ("Aşağıdaki Tivibu paketlerinden hangileri kampanya kapsamındadır?", ["Yalnızca Spor paketi", "Yalnızca Sinema paketi", "Aile, Sinema, Spor veya Süper IPTV", "Tivibu paketi gerekmiyor"]),
+ ("Netflix avantajı açısından İnternet + Tivibu kampanyası ile yalnızca Tivibu kampanyasının paket koşulları nasıl farklılaşır?", ["İnternet + Tivibu kampanyasında tüm Tivibu paketleri; yalnızca Tivibu kampanyasında sadece Süper Paket geçerlidir", "Her iki kampanyada sadece Süper Paket geçerlidir", "İnternet + Tivibu kampanyasında sadece Süper Paket; yalnızca Tivibu kampanyasında tüm paketler geçerlidir", "Her iki kampanyada tüm Tivibu paketleri geçerlidir"]),
  ("Kampanya kapsamında hangi Netflix paketleri seçilebilir?", ["Yalnızca Temel", "Yalnızca Premium", "Temel, Standart veya Premium", "Yalnızca Standart"]),
  ("Müşteri Netflix üyeliğini nasıl aktif hale getirir?", ["Türk Telekom bayisine tekrar gelerek", "İnternet ve Tivibu aktivasyonundan sonra gönderilen SMS üzerinden mevcut hesabını bağlayarak veya yeni üyelik açarak", "Netflix müşteri hizmetlerini arayarak", "Üyelik hiçbir işlem gerekmeden otomatik açılır"]),
  ("Müşteri, “Netflix 18 ay boyunca ücretsiz mi?” diye sorarsa doğru yanıt hangisidir?", ["Evet, 18 ay boyunca ücretsizdir", "İlk 6 ay ücretsizdir. 7–12. aylar arasında sabit ücret, 13. aydan itibaren güncel Netflix fiyatı uygulanır", "İlk 12 ay ücretsizdir", "Sadece ilk ay ücretsizdir"])
