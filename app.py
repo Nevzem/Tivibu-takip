@@ -1,4 +1,6 @@
 import os, json, sqlite3, csv, io, hmac, hashlib, secrets
+import psycopg
+from psycopg.rows import dict_row
 from datetime import datetime, timezone
 from functools import wraps
 from flask import Flask, request, render_template_string, Response, redirect, url_for, abort
@@ -6,6 +8,7 @@ from flask import Flask, request, render_template_string, Response, redirect, ur
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 12000
 DB = os.environ.get("DB_PATH", "/opt/render/project/src/netflix_test_responses.sqlite3")
+DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
 DEVICE_COOKIE = "tt_netflix_attempt_finished_v1"
 ONE_YEAR = 365 * 24 * 60 * 60
@@ -71,7 +74,40 @@ a{color:#0076be}.stats{display:flex;gap:12px;flex-wrap:wrap;margin:20px 0}.stat{
 @media(max-width:580px){main{padding:12px 12px 50px}.hero{padding:24px 20px}.card{padding:19px 15px}.answer{padding:12px 10px}table{font-size:11px}}
 """
 TEMPLATE_HEAD = "<!doctype html><html lang='tr'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><meta name='robots' content='noindex,nofollow'><title>Netflix Kampanya Bilgi Testi</title><style>"+CSS+"</style></head><body>"
+class PostgresConnection:
+    def __init__(self, raw):
+        self.raw = raw
+
+    def execute(self, statement, values=()):
+        sql = "BEGIN" if statement.strip().upper() == "BEGIN IMMEDIATE" else statement.replace("?", "%s")
+        return self.raw.execute(sql, values)
+
+    def commit(self):
+        self.raw.commit()
+
+    def rollback(self):
+        self.raw.rollback()
+
+    def close(self):
+        self.raw.close()
+
+
 def db():
+    if DATABASE_URL:
+        raw = psycopg.connect(DATABASE_URL, connect_timeout=8, row_factory=dict_row)
+        raw.execute("""CREATE TABLE IF NOT EXISTS responses (
+            id BIGSERIAL PRIMARY KEY,
+            name TEXT NOT NULL,
+            branch TEXT NOT NULL,
+            answers TEXT NOT NULL,
+            score INTEGER NOT NULL,
+            submitted_at TEXT NOT NULL,
+            UNIQUE(name, branch))""")
+        raw.execute("""CREATE UNIQUE INDEX IF NOT EXISTS uq_person_branch_norm
+                       ON responses(lower(name), lower(branch))""")
+        raw.commit()
+        return PostgresConnection(raw)
+    # Historic local data may only survive within its original temporary server instance.
     con = sqlite3.connect(DB, timeout=25)
     con.row_factory = sqlite3.Row
     con.execute("""CREATE TABLE IF NOT EXISTS responses (
@@ -85,6 +121,19 @@ def db():
     con.commit()
     return con
 
+
+def storage_not_ready():
+    return render_template_string(TEMPLATE_HEAD + """
+    <main><section class="hero"><div class="brand">Türk Telekom ◆</div>
+    <div class="small">Netflix Kampanyası Bilgi Testi</div>
+    <h1>Test geçici olarak kapalı.</h1>
+    <p>Yanıtların güvenle saklanabilmesi için kalıcı veritabanı bağlantısı henüz tamamlanmadı.
+    Bu nedenle şu anda yeni sınav gönderimi kabul edilmiyor.</p></section>
+    <p class="info">Önceden testi tamamladıysanız yeniden giriş yapmayın.
+    Sınav sorumlusu sonuçlar ve yeni katılım hakkında bilgilendirme yapacaktır.</p></main>
+    </body></html>""")
+
+
 @app.after_request
 def headers(resp):
     resp.headers['X-Content-Type-Options']='nosniff'
@@ -95,6 +144,8 @@ def headers(resp):
 
 @app.get("/")
 def home():
+    if not DATABASE_URL:
+        return storage_not_ready()
     if has_completed_cookie():
         return redirect("/completed")
     content = """
@@ -127,6 +178,8 @@ def home():
 
 @app.post("/submit")
 def submit():
+    if not DATABASE_URL:
+        return storage_not_ready(), 503
     if has_completed_cookie():
         return redirect("/completed")
     if request.form.get("website"):
@@ -152,7 +205,7 @@ def submit():
                        VALUES (?,?,?,?,?)""",
                     (name,branch,json.dumps(answers,ensure_ascii=False),score,datetime.now(timezone.utc).isoformat()))
         con.commit()
-    except sqlite3.IntegrityError:
+    except (sqlite3.IntegrityError, psycopg.errors.UniqueViolation):
         con.rollback()
         return completion_page("Bu personel testi daha önce tamamlamış.", "Aynı personel ve bayi için ikinci katılım kabul edilmiyor.")
     finally:
@@ -180,6 +233,8 @@ def admin_only(fn):
 @app.get("/admin")
 @admin_only
 def admin():
+    if not DATABASE_URL:
+        return storage_not_ready()
     con=db()
     rows=[dict(x) for x in con.execute("SELECT * FROM responses ORDER BY branch,name")]
     con.close()
@@ -210,6 +265,8 @@ def csv_cell(x):
 @app.get("/admin/export.csv")
 @admin_only
 def export():
+    if not DATABASE_URL:
+        return storage_not_ready(), 503
     con=db()
     rows=con.execute("SELECT name,branch,answers,score,submitted_at FROM responses ORDER BY branch,name").fetchall()
     con.close()
