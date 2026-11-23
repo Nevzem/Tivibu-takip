@@ -1,4 +1,4 @@
-import os, json, sqlite3, csv, io, hmac
+import os, json, sqlite3, csv, io, hmac, hashlib, secrets
 from datetime import datetime, timezone
 from functools import wraps
 from flask import Flask, request, render_template_string, Response, redirect, url_for, abort
@@ -7,6 +7,33 @@ app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 12000
 DB = os.environ.get("DB_PATH", "/opt/render/project/src/netflix_test_responses.sqlite3")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
+DEVICE_COOKIE = "tt_netflix_attempt_finished_v1"
+ONE_YEAR = 365 * 24 * 60 * 60
+
+def signed_completion_cookie():
+    token = secrets.token_urlsafe(24)
+    mac = hmac.new(ADMIN_PASSWORD.encode("utf-8"), token.encode("utf-8"), hashlib.sha256).hexdigest()
+    return token + "." + mac
+
+def has_completed_cookie():
+    cookie = request.cookies.get(DEVICE_COOKIE, "")
+    if not ADMIN_PASSWORD or len(cookie) > 150 or "." not in cookie:
+        return False
+    token, received = cookie.rsplit(".", 1)
+    expected = hmac.new(ADMIN_PASSWORD.encode("utf-8"), token.encode("utf-8"), hashlib.sha256).hexdigest()
+    return bool(token) and hmac.compare_digest(received, expected)
+
+def completion_page(title, message):
+    return render_template_string(TEMPLATE_HEAD + """
+    <main><section class="hero"><div class="brand">Türk Telekom ◆</div>
+    <div class="small">Personel bilgi testi</div><h1>{{ title }}</h1><p>{{ message }}</p></section>
+    <p class="info">Her personel ve tarayıcı için bir katılım hakkı bulunmaktadır.
+    Yardım gerektiğinde yöneticinize başvurabilirsiniz.</p></main>
+    </body></html>""", title=title, message=message)
+
+@app.get("/completed")
+def completed():
+    return completion_page("Katılım hakkınız kullanıldı.", "Bu cihazın bu tarayıcısından test yalnızca bir kez tamamlanabilir.")
 KEYS = ["C","A","B","B","C","B","A","C","B","B"]
 QUESTIONS = [
  ("Netflix Hediyeli İnternet + Tivibu kampanyası aşağıdaki müşteri gruplarından hangisine yönelik değildir?", ["Yeni bireysel ev interneti aboneliği başlatan müşterilere", "İnternet ve Tivibu IPTV hizmetlerini birlikte alan yeni bireysel müşterilere", "Kurumsal internet aboneliği açtıran işletmelere", "18 ay taahhütle yeni bireysel ev interneti müşterisi olanlara"]),
@@ -68,13 +95,16 @@ def headers(resp):
 
 @app.get("/")
 def home():
+    if has_completed_cookie():
+        return redirect("/completed")
     content = """
+    <script>try {if(localStorage.getItem("tt_netflix_attempt_finished_v1")==="yes"){location.replace("/completed");}} catch(e){}</script>
     <main><section class="hero"><div class="brand">Türk Telekom <span style="color:#16f2f2">◆</span></div>
     <div class="small">Personel bilgi ve yetkinlik testi</div>
     <h1>Netflix Hediyeli<br>İnternet + Tivibu<br>Kampanyası</h1>
     <p>Kampanyayı ne kadar iyi tanıyorsunuz? 10 soruluk bilgi testini tamamlayın.</p>
     <span class="pill">10 SORU · 100 PUAN</span></section>
-    <div class="info">Lütfen adınızı, soyadınızı ve bayi adını girin. Her soruda tek seçenek işaretleyin. Yanıtınız yöneticinizin değerlendirmesi için kaydedilecektir.</div>
+    <div class="info">Lütfen adınızı, soyadınızı ve bayi adını girin. Her soruda tek seçenek işaretleyin. Bu test tek katılımlıktır: Gönderdikten sonra aynı tarayıcıda yeniden açılmaz, aynı ad-soyad ve bayiyle ikinci gönderim kabul edilmez. Yanıtınız yöneticinizin değerlendirmesi için kaydedilecektir.</div>
     <form action="/submit" method="post" id="test">
        <section class="card"><h3>Personel Bilgileri</h3>
        <label class="field" for="name">Ad Soyad</label><input id="name" type="text" name="name" maxlength="120" autocomplete="name" placeholder="Adınız ve soyadınız" required>
@@ -97,6 +127,8 @@ def home():
 
 @app.post("/submit")
 def submit():
+    if has_completed_cookie():
+        return redirect("/completed")
     if request.form.get("website"):
         return redirect("/")
     name=" ".join(request.form.get("name","").strip().split())
@@ -108,16 +140,33 @@ def submit():
         abort(400)
     score=sum(a==b for a,b in zip(answers,KEYS))*10
     con=db()
-    con.execute("""INSERT INTO responses (name,branch,answers,score,submitted_at)
-                   VALUES (?,?,?,?,?)
-                   ON CONFLICT(name,branch) DO UPDATE SET answers=excluded.answers,score=excluded.score,submitted_at=excluded.submitted_at""",
-                 (name,branch,json.dumps(answers,ensure_ascii=False),score,datetime.now(timezone.utc).isoformat()))
-    con.commit()
-    con.close()
-    return render_template_string(TEMPLATE_HEAD+"""
+    try:
+        con.execute("BEGIN IMMEDIATE")
+        existing=con.execute("""SELECT 1 FROM responses
+                                WHERE lower(name)=lower(?) AND lower(branch)=lower(?)
+                                LIMIT 1""",(name,branch)).fetchone()
+        if existing:
+            con.rollback()
+            return completion_page("Bu personel testi daha önce tamamlamış.", "Aynı ad-soyad ve bayi için ikinci katılım kabul edilmiyor.")
+        con.execute("""INSERT INTO responses (name,branch,answers,score,submitted_at)
+                       VALUES (?,?,?,?,?)""",
+                    (name,branch,json.dumps(answers,ensure_ascii=False),score,datetime.now(timezone.utc).isoformat()))
+        con.commit()
+    except sqlite3.IntegrityError:
+        con.rollback()
+        return completion_page("Bu personel testi daha önce tamamlamış.", "Aynı personel ve bayi için ikinci katılım kabul edilmiyor.")
+    finally:
+        con.close()
+    page=render_template_string(TEMPLATE_HEAD+"""
     <main><section class="hero"><div class="brand">Türk Telekom ◆</div><h1>Cevaplarınız alındı. ✓</h1>
     <p>Katılımınız için teşekkürler. Yanıtlarınız değerlendirildikten sonra sonuçlar yöneticiniz tarafından incelenecektir.</p>
-    <a href="/" style="display:block;color:white;margin-top:22px">Ana Sayfaya Dön</a></section></main></body></html>""")
+    <p style="color:#daf6fa;margin-top:16px">Testiniz tamamlandı. Aynı tarayıcıdan tekrar katılım yapılamaz.</p>
+    </section></main>
+    <script>try{localStorage.setItem("tt_netflix_attempt_finished_v1","yes")}catch(e){}</script>
+    </body></html>""")
+    response=Response(page)
+    response.set_cookie(DEVICE_COOKIE,signed_completion_cookie(),max_age=ONE_YEAR,secure=True,httponly=True,samesite="Lax",path="/")
+    return response
 
 def admin_only(fn):
     @wraps(fn)
