@@ -10,7 +10,7 @@ app.config["MAX_CONTENT_LENGTH"] = 12000
 DB = os.environ.get("DB_PATH", "/opt/render/project/src/netflix_test_responses.sqlite3")
 DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
-DEVICE_COOKIE = "tt_netflix_attempt_finished_v1"
+DEVICE_COOKIE = "tt_netflix_attempt_finished_v2"
 ONE_YEAR = 365 * 24 * 60 * 60
 
 def signed_completion_cookie():
@@ -149,7 +149,7 @@ def home():
     if has_completed_cookie():
         return redirect("/completed")
     content = """
-    <script>try {if(localStorage.getItem("tt_netflix_attempt_finished_v1")==="yes"){location.replace("/completed");}} catch(e){}</script>
+    <script>try {if(localStorage.getItem("tt_netflix_attempt_finished_v2")==="yes"){location.replace("/completed");}} catch(e){}</script>
     <main><section class="hero"><div class="brand">Türk Telekom <span style="color:#16f2f2">◆</span></div>
     <div class="small">Personel bilgi ve yetkinlik testi</div>
     <h1>Netflix Hediyeli<br>İnternet + Tivibu<br>Kampanyası</h1>
@@ -215,7 +215,7 @@ def submit():
     <p>Katılımınız için teşekkürler. Yanıtlarınız değerlendirildikten sonra sonuçlar yöneticiniz tarafından incelenecektir.</p>
     <p style="color:#daf6fa;margin-top:16px">Testiniz tamamlandı. Aynı tarayıcıdan tekrar katılım yapılamaz.</p>
     </section></main>
-    <script>try{localStorage.setItem("tt_netflix_attempt_finished_v1","yes")}catch(e){}</script>
+    <script>try{localStorage.setItem("tt_netflix_attempt_finished_v2","yes")}catch(e){}</script>
     </body></html>""")
     response=Response(page)
     response.set_cookie(DEVICE_COOKIE,signed_completion_cookie(),max_age=ONE_YEAR,secure=True,httponly=True,samesite="Lax",path="/")
