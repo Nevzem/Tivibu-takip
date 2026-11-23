@@ -9,6 +9,31 @@ app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 12000
 DB = os.environ.get("DB_PATH", "/opt/render/project/src/netflix_test_responses.sqlite3")
 DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
+HISTORIC_SUBMISSION_LOGS = [
+    ("2026-11-23 10:04:51", 200),
+    ("2026-11-23 11:05:00", 200),
+    ("2026-11-23 11:08:06", 200),
+    ("2026-11-23 11:10:53", 200),
+    ("2026-11-23 11:11:47", 200),
+    ("2026-11-23 11:15:25", 200),
+    ("2026-11-23 11:15:31", 200),
+    ("2026-11-23 11:15:36", 302),
+    ("2026-11-23 11:15:37", 200),
+    ("2026-11-23 11:15:37", 200),
+    ("2026-11-23 11:17:01", 200),
+    ("2026-11-23 11:20:09", 200),
+    ("2026-11-23 11:24:53", 200),
+    ("2026-11-23 11:58:07", 200),
+    ("2026-11-23 11:58:30", 200),
+    ("2026-11-23 11:58:31", 200),
+    ("2026-11-23 11:58:33", 302),
+    ("2026-11-23 11:58:39", 302),
+    ("2026-11-23 12:00:06", 200),
+    ("2026-11-23 12:01:14", 200),
+    ("2026-11-23 12:02:47", 200),
+    ("2026-11-23 12:03:14", 200),
+]
+
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
 DEVICE_COOKIE = "tt_netflix_attempt_finished_v2"
 ONE_YEAR = 365 * 24 * 60 * 60
@@ -225,16 +250,45 @@ def admin_only(fn):
     @wraps(fn)
     def check(*a,**kw):
         auth=request.authorization
-        if not ADMIN_PASSWORD or not auth or not hmac.compare_digest(auth.username or "","yonetici") or not hmac.compare_digest(auth.password or "",ADMIN_PASSWORD):
+        if not ADMIN_PASSWORD or not auth or not hmac.compare_digest((auth.username or "").encode("utf-8"), b"yonetici") or not hmac.compare_digest((auth.password or "").encode("utf-8"), ADMIN_PASSWORD.encode("utf-8")):
             return Response("Yönetici girişi gerekli",401,{"WWW-Authenticate":'Basic realm="Personel Testi - Yonetici"'})
         return fn(*a,**kw)
     return check
+
+
+@app.get("/admin/history")
+@admin_only
+def history():
+    """Historical HTTP request evidence only: not personal exam results."""
+    body = """
+    <main><section class="hero">
+    <div class="small">23 Kasım 2026 · Geçmiş kayıtlar</div>
+    <h1>Eski Katılım İzleri</h1>
+    <p>Geçici sunucudan kaybolan sınavların <b>HTTP gönderim günlükleri</b> korunmuştur. Bu tabloda kişi adı, cevap veya puan bulunmaz.</p>
+    </section>
+    <div class="stats">
+    <div class="stat"><b>22</b>Gönderim denemesi</div>
+    <div class="stat"><b>19</b>HTTP 200 yanıtı</div>
+    <div class="stat"><b>3</b>HTTP 302 yönlendirme</div>
+    </div>
+    <section class="card">
+    <h3>Kaydedilebilen kanıtlar (Türkiye saati)</h3>
+    <p class="info">HTTP 200 yanıtı bir sınav kaydının hâlâ mevcut olduğunu veya 19 ayrı çalışanın katıldığını garanti etmez. HTTP 302 kayıtları tarayıcı katılım kilidine denk gelmektedir. Bunlar sonuç veya puan değildir.</p>
+    <table><thead><tr><th>Saat (TR)</th><th>Sunucu yanıtı</th></tr></thead><tbody>
+    {%for t,c in logs%}
+    <tr><td>{{t}}</td><td>{{c}}</td></tr>
+    {%endfor%}
+    </tbody></table>
+    </section>
+    <p class="info"><a href="/admin">Yeni sonuçlar paneli</a>. Kalıcı veritabanı bağlantısı yapılana kadar yeni sonuç kaydı kapalıdır.</p>
+    <footer>Önceki puan ve cevaplar sunucu erişim günlüklerinde tutulmadığı için geri üretilemez.</footer></main></body></html>"""
+    return render_template_string(TEMPLATE_HEAD + body, logs=HISTORIC_SUBMISSION_LOGS)
 
 @app.get("/admin")
 @admin_only
 def admin():
     if not DATABASE_URL:
-        return storage_not_ready()
+        return redirect("/admin/history")
     con=db()
     rows=[dict(x) for x in con.execute("SELECT * FROM responses ORDER BY branch,name")]
     con.close()
